@@ -1,6 +1,8 @@
 package com.skodin.kafkastreamstestproject.processors;
 
 import com.skodin.kafkastreamstestproject.models.Message;
+import com.skodin.kafkastreamstestproject.models.VoiceCommand;
+import com.skodin.kafkastreamstestproject.services.SpeechToTextService;
 import com.skodin.kafkastreamstestproject.util.MessageSerde;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -11,7 +13,9 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.Produced;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.support.serializer.JsonSerde;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -21,7 +25,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WordCountProcessor {
 
+    public static final String INPUT_VOICE_COMMANDS = "input-voice-commands";
+    public static final String OUTPUT_RECOGNIZED_COMMANDS = "output-recognized-commands";
     private static final Serde<String> stringSerde = Serdes.String();
+
+    private final SpeechToTextService speechToTextService;
 
     private final MessageSerde messageSerde;
 
@@ -54,6 +62,19 @@ public class WordCountProcessor {
         log.info(topology.describe());
     }
 
+    @Autowired
+    public void buildPipelineVoiceCommandParserTopology(StreamsBuilder streamsBuilder) {
+        KStream<String, VoiceCommand> messageStream = streamsBuilder
+                .stream(INPUT_VOICE_COMMANDS, Consumed.with(stringSerde, new JsonSerde<>()));
+
+        messageStream
+                .mapValues((readOnlyKey, value) -> speechToTextService.speechToText(value))
+                // TODO
+                .to(OUTPUT_RECOGNIZED_COMMANDS, Produced.with(stringSerde, new JsonSerde<>()));
+
+        Topology topology = streamsBuilder.build();
+        log.info(topology.describe());
+    }
 
 
 }
