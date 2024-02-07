@@ -1,0 +1,10 @@
+application:
+  kafka:
+    topics:
+      first: "output-topic"
+
+spring:
+  kafka:
+    bootstrap-servers: "localhost:29092"
+    consumer:
+      auto-offset-reset: latest

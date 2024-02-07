@@ -1,0 +1,8 @@
+application:
+  kafka:
+    topics:
+      first: "input-topic"
+
+spring:
+  kafka:
+    bootstrap-servers: "localhost:29092"
