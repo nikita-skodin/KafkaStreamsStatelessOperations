@@ -1,6 +1,7 @@
 package com.skodin.producer.schedulers;
 
 import com.skodin.producer.models.Message;
+import com.skodin.producer.models.VoiceCommand;
 import com.skodin.producer.util.generators.MessageGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -20,8 +21,9 @@ public class KafkaProducerScheduler {
 
     private final MessageGenerator messageGenerator;
     private final KafkaTemplate<String, Message> firstMessageKafkaTemplate;
+    private final KafkaTemplate<String, VoiceCommand> kafkaTemplate;
 
-    @Scheduled(fixedDelay = 5_00L)
+//    @Scheduled(fixedDelay = 5_00L)
     public void sendToTheFourthTopic() {
         log.info("SENDING TO {}", topicName);
         Message message = messageGenerator.generateMessage();
@@ -38,5 +40,21 @@ public class KafkaProducerScheduler {
                     }
                 });
     }
+
+    @Scheduled(fixedDelay = 5_00L)
+    public void sendToTheFourthTopic1() {
+        log.info("SENDING TO {}", "input-voice-commands");
+        ProducerRecord<String, VoiceCommand> record = new ProducerRecord<>("input-voice-commands",
+                new VoiceCommand("1", "test".getBytes(), "codec", "en"));
+        kafkaTemplate.send(record)
+                .whenComplete((stringEventSendResult, throwable) -> {
+                    if (throwable == null) {
+                        log.info("SUCCESS!");
+                    } else {
+                        log.error("ERROR: {}", throwable, throwable);
+                    }
+                });
+    }
+
 
 }

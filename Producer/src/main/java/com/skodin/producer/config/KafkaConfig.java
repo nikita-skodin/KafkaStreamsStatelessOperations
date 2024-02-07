@@ -1,7 +1,10 @@
 package com.skodin.producer.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skodin.producer.models.Message;
+import com.skodin.producer.models.VoiceCommand;
 import com.skodin.producer.util.serializers.MessageSerializer;
+import com.skodin.producer.util.serializers.VoiceCommandSerializer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -53,6 +56,33 @@ public class KafkaConfig {
     @Bean
     public NewTopic firstTopic() {
         return TopicBuilder.name(topicName).partitions(1).replicas(1).build();
+    }
+
+
+    @Bean
+    public ProducerFactory<String, VoiceCommand> producerFactory
+            (KafkaProperties kafkaProperties) {
+
+        Map<String, Object> properties = kafkaProperties.buildProducerProperties(new DefaultSslBundleRegistry());
+        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        properties.put(ProducerConfig.CLIENT_ID_CONFIG, "message-producer-test");
+
+        DefaultKafkaProducerFactory<String, VoiceCommand> factory = new DefaultKafkaProducerFactory<>(properties);
+
+        factory.setValueSerializer(new VoiceCommandSerializer(new ObjectMapper()));
+
+        return factory;
+    }
+
+    @Bean
+    public KafkaTemplate<String, VoiceCommand> kafkaTemplate
+            (ProducerFactory<String, VoiceCommand> firstMessageProducerFactory) {
+        return new KafkaTemplate<>(firstMessageProducerFactory);
+    }
+
+    @Bean
+    public NewTopic topic() {
+        return TopicBuilder.name("input-voice-commands").partitions(1).replicas(1).build();
     }
 
 }
