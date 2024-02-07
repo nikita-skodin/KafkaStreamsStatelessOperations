@@ -14,6 +14,8 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Log4j2
 @Component
 @RequiredArgsConstructor
@@ -24,7 +26,7 @@ public class WordCountProcessor {
     private final MessageSerde messageSerde;
 
     @Autowired
-    public void buildPipeline(StreamsBuilder streamsBuilder) {
+    public void buildPipelineForEmptyStatelessMapValue(StreamsBuilder streamsBuilder) {
         KStream<String, Message> messageStream = streamsBuilder
                 .stream("input-topic", Consumed.with(stringSerde, messageSerde));
 
@@ -35,4 +37,23 @@ public class WordCountProcessor {
         Topology topology = streamsBuilder.build();
         log.info(topology.describe());
     }
+
+    @Autowired
+    public void buildPipelineForEmptyWordCounter(StreamsBuilder streamsBuilder) {
+        KStream<String, String> messageStream = streamsBuilder
+                .stream("input-words-topic", Consumed.with(stringSerde, stringSerde));
+
+        messageStream
+                .flatMapValues(((readOnlyKey, value) -> List.of(value.toLowerCase().split(" "))))
+                .groupBy((key, value) -> value)
+                .count()
+                .toStream()
+                .to("output-word-topic");
+
+        Topology topology = streamsBuilder.build();
+        log.info(topology.describe());
+    }
+
+
+
 }

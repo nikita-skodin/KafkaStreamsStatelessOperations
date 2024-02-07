@@ -44,6 +44,8 @@ public class KafkaStreamsConfig {
         props.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 100);
         props.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, 1);
 
+//        props.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, "0");
+
         props.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
                 RecoveringDeserializationExceptionHandler.class);
         props.put(RecoveringDeserializationExceptionHandler.KSTREAM_DESERIALIZATION_RECOVERER, recoverer());
