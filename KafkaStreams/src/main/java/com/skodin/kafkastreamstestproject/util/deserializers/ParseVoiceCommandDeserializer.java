@@ -1,38 +1,34 @@
-package com.skodin.kafkastreamstestproject.util;
+package com.skodin.kafkastreamstestproject.util.deserializers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.skodin.kafkastreamstestproject.models.Message;
+import com.skodin.kafkastreamstestproject.models.ParsedVoiceCommand;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-@Log4j2
 @Component
 @RequiredArgsConstructor
-public class MessageDeserializer implements Deserializer<Message> {
+public class ParseVoiceCommandDeserializer implements Deserializer<ParsedVoiceCommand> {
 
     private final ObjectMapper objectMapper;
 
     @Override
-    public Message deserialize(String topic, byte[] data) {
+    public ParsedVoiceCommand deserialize(String topic, byte[] data) {
         try {
-            return objectMapper.readValue(data, Message.class);
+            return objectMapper.readValue(data, ParsedVoiceCommand.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public Message deserialize(String topic, Headers headers, ByteBuffer data) {
-
+    public ParsedVoiceCommand deserialize(String topic, Headers headers, byte[] data) {
         for (var header : headers.headers("class")) {
-            if (Arrays.equals(header.value(), "Message".getBytes())) {
+            if (Arrays.equals(header.value(), "ParseVoiceCommand".getBytes())) {
                 return Deserializer.super.deserialize(topic, headers, data);
             }
         }

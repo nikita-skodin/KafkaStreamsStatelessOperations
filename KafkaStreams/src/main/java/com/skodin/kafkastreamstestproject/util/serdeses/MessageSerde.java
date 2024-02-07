@@ -1,6 +1,8 @@
-package com.skodin.kafkastreamstestproject.util;
+package com.skodin.kafkastreamstestproject.util.serdeses;
 
 import com.skodin.kafkastreamstestproject.models.Message;
+import com.skodin.kafkastreamstestproject.util.deserializers.MessageDeserializer;
+import com.skodin.kafkastreamstestproject.util.serializers.MessageSerializer;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serde;
