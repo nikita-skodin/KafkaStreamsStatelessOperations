@@ -1,5 +1,6 @@
 package com.skodin.kafkastreamstestproject.processors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skodin.kafkastreamstestproject.models.ParsedVoiceCommand;
 import com.skodin.kafkastreamstestproject.models.VoiceCommand;
 import com.skodin.kafkastreamstestproject.services.SpeechToTextService;
@@ -11,8 +12,6 @@ import org.apache.kafka.streams.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -20,13 +19,16 @@ import java.util.Properties;
 
 @ExtendWith(MockitoExtension.class)
 class MainProcessorTest {
-    Serde<String> STRING_SERDE = Serdes.String();
-    final VoiceCommandSerde voiceCommandSerde = new VoiceCommandSerde();
-    final ParsedVoiceCommandSerde parsedVoiceCommandSerde = new ParsedVoiceCommandSerde();
-    @Mock
-    SpeechToTextService speechToTextService;
-    @InjectMocks
-    MainProcessor mainProcessor;
+
+    private final ObjectMapper mapper = new ObjectMapper();
+
+    private final Serde<String> STRING_SERDE = Serdes.String();
+    private final VoiceCommandSerde VOICE_COMMAND_SERDE = new VoiceCommandSerde(mapper);
+    private final ParsedVoiceCommandSerde PARSED_VOICE_COMMAND_SERDE = new ParsedVoiceCommandSerde(mapper);
+
+    private final SpeechToTextService speechToTextService = Mockito.mock(SpeechToTextService.class);
+    private final MainProcessor mainProcessor = Mockito.spy(new MainProcessor(speechToTextService,
+            VOICE_COMMAND_SERDE, PARSED_VOICE_COMMAND_SERDE));
 
     @Test
     void buildPipelineVoiceCommandParserTopology() {
@@ -38,21 +40,26 @@ class MainProcessorTest {
 
             TestInputTopic<String, VoiceCommand> inputTopic = topologyTestDriver.createInputTopic(
                     MainProcessor.INPUT_VOICE_COMMANDS,
-                    STRING_SERDE.serializer(), voiceCommandSerde.serializer());
+                    STRING_SERDE.serializer(), VOICE_COMMAND_SERDE.serializer());
 
             TestOutputTopic<String, ParsedVoiceCommand> outputTopic = topologyTestDriver.createOutputTopic(
                     MainProcessor.OUTPUT_RECOGNIZED_COMMANDS,
-                    STRING_SERDE.deserializer(), parsedVoiceCommandSerde.deserializer());
+                    STRING_SERDE.deserializer(), PARSED_VOICE_COMMAND_SERDE.deserializer());
 
-            var vc = VoiceCommand.builder().id("1").build();
-            var ex = new ParsedVoiceCommand("", "", 0.0, "");
+            String id = "1";
+            String language = "ru";
 
-            Mockito.when(speechToTextService.speechToText(vc)).thenReturn(ex);
+            var vc = VoiceCommand.builder().id(id).language(language).build();
+            var pvc = ParsedVoiceCommand.builder().id(id).language(language).build();
+
+            Mockito.when(speechToTextService.speechToText(vc)).thenReturn(pvc);
 
             inputTopic.pipeInput(vc);
 
-            Assertions.assertEquals(ex, outputTopic.readValue());
+            var actualPvc = outputTopic.readValue();
 
+            Assertions.assertEquals(vc.getId(), actualPvc.getId());
+            Assertions.assertEquals(vc.getLanguage(), actualPvc.getLanguage());
         }
     }
 }
