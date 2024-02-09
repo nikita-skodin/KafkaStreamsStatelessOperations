@@ -1,16 +1,12 @@
 package com.skodin.producer.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.skodin.producer.models.Message;
 import com.skodin.producer.models.VoiceCommand;
-import com.skodin.producer.util.serializers.MessageSerializer;
-import com.skodin.producer.util.serializers.VoiceCommandSerializer;
+import com.skodin.producer.util.serdes.VoiceCommandSerde;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.boot.ssl.DefaultSslBundleRegistry;
 import org.springframework.context.annotation.Bean;
@@ -27,37 +23,11 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class KafkaConfig {
 
-    @Value("${application.kafka.topics.first}")
-    private String topicName;
+    public static final String INPUT_VOICE_COMMANDS = "input-voice-commands";
+    public static final String OUTPUT_RECOGNIZED_COMMANDS = "output-recognized-commands";
+    public static final String OUTPUT_UNRECOGNIZED_COMMANDS = "output-unrecognized-commands";
 
-    private final MessageSerializer messageSerializer;
-
-    @Bean
-    public ProducerFactory<String, Message> firstMessageProducerFactory
-            (KafkaProperties kafkaProperties) {
-
-        Map<String, Object> properties = kafkaProperties.buildProducerProperties(new DefaultSslBundleRegistry());
-        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        properties.put(ProducerConfig.CLIENT_ID_CONFIG, "message-producer");
-
-        DefaultKafkaProducerFactory<String, Message> factory = new DefaultKafkaProducerFactory<>(properties);
-
-        factory.setValueSerializer(messageSerializer);
-
-        return factory;
-    }
-
-    @Bean
-    public KafkaTemplate<String, Message> firstMessageKafkaTemplate
-            (ProducerFactory<String, Message> firstMessageProducerFactory) {
-        return new KafkaTemplate<>(firstMessageProducerFactory);
-    }
-
-    @Bean
-    public NewTopic firstTopic() {
-        return TopicBuilder.name(topicName).partitions(1).replicas(1).build();
-    }
-
+    private final VoiceCommandSerde voiceCommandSerde;
 
     @Bean
     public ProducerFactory<String, VoiceCommand> producerFactory
@@ -65,24 +35,32 @@ public class KafkaConfig {
 
         Map<String, Object> properties = kafkaProperties.buildProducerProperties(new DefaultSslBundleRegistry());
         properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        properties.put(ProducerConfig.CLIENT_ID_CONFIG, "message-producer-test");
+        properties.put(ProducerConfig.CLIENT_ID_CONFIG, "event-producer");
 
         DefaultKafkaProducerFactory<String, VoiceCommand> factory = new DefaultKafkaProducerFactory<>(properties);
 
-        factory.setValueSerializer(new VoiceCommandSerializer(new ObjectMapper()));
+        factory.setValueSerializer(voiceCommandSerde.serializer());
 
         return factory;
     }
 
     @Bean
     public KafkaTemplate<String, VoiceCommand> kafkaTemplate
-            (ProducerFactory<String, VoiceCommand> firstMessageProducerFactory) {
-        return new KafkaTemplate<>(firstMessageProducerFactory);
+            (ProducerFactory<String, VoiceCommand> producerFactory) {
+        return new KafkaTemplate<>(producerFactory);
     }
 
     @Bean
-    public NewTopic topic() {
-        return TopicBuilder.name("input-voice-commands").partitions(1).replicas(1).build();
+    public NewTopic topic1() {
+        return TopicBuilder.name(INPUT_VOICE_COMMANDS).partitions(1).replicas(1).build();
+    }
+
+    public NewTopic topic2() {
+        return TopicBuilder.name(OUTPUT_RECOGNIZED_COMMANDS).partitions(1).replicas(1).build();
+    }
+
+    public NewTopic topic3() {
+        return TopicBuilder.name(OUTPUT_UNRECOGNIZED_COMMANDS).partitions(1).replicas(1).build();
     }
 
 }

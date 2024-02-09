@@ -9,7 +9,7 @@ public class SpeechToTextService {
 
      public ParsedVoiceCommand speechToText(VoiceCommand value){
          return switch (value.getId()) {
-             case "26679943-f55e-4731-986e-c5c5395715de" -> ParsedVoiceCommand.builder()
+             case "26679943-f55e-4731-986e-c5c5395715de" -> ParsedVoiceCommand.builder()    // output-recognized-commands
                      .id(value.getId())
                      .textCommand("call john")
                      .probability(0.957)
@@ -21,7 +21,7 @@ public class SpeechToTextService {
                      .probability(0.937)
                      .language(value.getLanguage())
                      .build();
-             default -> ParsedVoiceCommand.builder()
+             default -> ParsedVoiceCommand.builder()    // output-unrecognized-commands
                      .id(value.getId())
                      .textCommand("call john")
                      .probability(0.37)
