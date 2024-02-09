@@ -26,9 +26,6 @@ public class MainProcessor {
     public static final String OUTPUT_RECOGNIZED_COMMANDS = "output-recognized-commands";
     private static final Serde<String> stringSerde = Serdes.String();
 
-    private final VoiceCommandSerde voiceCommandSerde;
-    private final ParsedVoiceCommandSerde parsedVoiceCommandSerde;
-
     private final SpeechToTextService speechToTextService;
 
     private final MessageSerde messageSerde;
@@ -64,6 +61,9 @@ public class MainProcessor {
 
     @Autowired
     public void buildPipelineVoiceCommandParserTopology(StreamsBuilder streamsBuilder) {
+
+        final VoiceCommandSerde voiceCommandSerde = new VoiceCommandSerde();
+        final ParsedVoiceCommandSerde parsedVoiceCommandSerde = new ParsedVoiceCommandSerde();
 
         KStream<String, VoiceCommand> messageStream = streamsBuilder
                 .stream(INPUT_VOICE_COMMANDS, Consumed.with(stringSerde, voiceCommandSerde));
